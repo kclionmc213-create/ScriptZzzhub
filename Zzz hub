@@ -1,0 +1,223 @@
+local Players = game:GetService("Players")
+local TweenService = game:GetService("TweenService")
+local CoreGui = game:GetService("CoreGui")
+local P = Players.LocalPlayer
+local PG = P:WaitForChild("PlayerGui")
+
+-- Dọn dẹp UI cũ
+local old = PG:FindFirstChild("ZzzHubMainUI") or CoreGui:FindFirstChild("ZzzHubMainUI")
+if old then old:Destroy() end
+
+local GUI = Instance.new("ScreenGui")
+GUI.Name = "ZzzHubMainUI"
+GUI.ResetOnSpawn = false
+GUI.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+GUI.Parent = (gethui and gethui()) or CoreGui or PG
+
+-- Khung chính
+local Main = Instance.new("CanvasGroup")
+Main.AnchorPoint = Vector2.new(0.5, 0.5)
+Main.Position = UDim2.fromScale(0.5, 0.5)
+Main.Size = UDim2.fromOffset(550, 320)
+Main.BackgroundColor3 = Color3.fromRGB(15, 15, 20)
+Main.BorderSizePixel = 0
+Main.Active = true
+Main.Draggable = true
+Main.GroupTransparency = 1
+Main.Parent = GUI
+
+Instance.new("UICorner", Main).CornerRadius = UDim.new(0, 12)
+
+local stroke = Instance.new("UIStroke", Main)
+stroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+stroke.Color = Color3.fromRGB(140, 82, 255)
+stroke.Thickness = 2
+
+local scale = Instance.new("UIScale", Main)
+scale.Scale = 0.9
+
+-- Thanh Topbar (Tiêu đề + Nút tắt)
+local Topbar = Instance.new("Frame", Main)
+Topbar.Size = UDim2.new(1, 0, 0, 42)
+Topbar.BackgroundColor3 = Color3.fromRGB(22, 22, 28)
+Topbar.BorderSizePixel = 0
+
+local Title = Instance.new("TextLabel", Topbar)
+Title.Position = UDim2.fromOffset(16, 0)
+Title.Size = UDim2.new(0.6, 0, 1, 0)
+Title.BackgroundTransparency = 1
+Title.RichText = true
+Title.Text = '<font color="rgb(140,82,255)">ZZZ</font> <font color="rgb(255,255,255)">HUB</font> <font color="rgb(180,180,190)">| V7</font>'
+Title.Font = Enum.Font.GothamBlack
+Title.TextSize = 16
+Title.TextColor3 = Color3.new(1, 1, 1)
+Title.TextXAlignment = Enum.TextXAlignment.Left
+
+local Close = Instance.new("TextButton", Topbar)
+Close.AnchorPoint = Vector2.new(1, 0.5)
+Close.Position = UDim2.new(1, -10, 0.5, 0)
+Close.Size = UDim2.fromOffset(28, 28)
+Close.BackgroundColor3 = Color3.fromRGB(30, 30, 38)
+Close.BorderSizePixel = 0
+Close.Text = "✕"
+Close.TextColor3 = Color3.fromRGB(200, 200, 210)
+Close.Font = Enum.Font.GothamBold
+Close.TextSize = 13
+Close.AutoButtonColor = false
+Instance.new("UICorner", Close).CornerRadius = UDim.new(0, 6)
+
+-- Thanh Sidebar (Chứa các Tab)
+local Sidebar = Instance.new("Frame", Main)
+Sidebar.Position = UDim2.fromOffset(0, 42)
+Sidebar.Size = UDim2.new(0, 130, 1, -42)
+Sidebar.BackgroundColor3 = Color3.fromRGB(18, 18, 24)
+Sidebar.BorderSizePixel = 0
+
+local TabList = Instance.new("UIListLayout", Sidebar)
+TabList.SortOrder = Enum.SortOrder.LayoutOrder
+TabList.Padding = UDim.new(0, 4)
+
+local TabPadding = Instance.new("UIPadding", Sidebar)
+TabPadding.PaddingTop = UDim.new(0, 8)
+TabPadding.PaddingLeft = UDim.new(0, 8)
+TabPadding.PaddingRight = UDim.new(0, 8)
+
+-- Khung nội dung chính
+local ContentArea = Instance.new("Frame", Main)
+ContentArea.Position = UDim2.fromOffset(130, 42)
+ContentArea.Size = UDim2.new(1, -130, 1, -42)
+ContentArea.BackgroundTransparency = 1
+
+-- Hệ thống Tab
+local tabs = {}
+
+local function createTab(name)
+	local tabBtn = Instance.new("TextButton", Sidebar)
+	tabBtn.Size = UDim2.new(1, 0, 0, 32)
+	tabBtn.BackgroundColor3 = Color3.fromRGB(25, 25, 32)
+	tabBtn.BorderSizePixel = 0
+	tabBtn.Text = name
+	tabBtn.TextColor3 = Color3.fromRGB(160, 160, 175)
+	tabBtn.Font = Enum.Font.GothamBold
+	tabBtn.TextSize = 12
+	tabBtn.AutoButtonColor = false
+	Instance.new("UICorner", tabBtn).CornerRadius = UDim.new(0, 6)
+
+	local tabContent = Instance.new("ScrollingFrame", ContentArea)
+	tabContent.Size = UDim2.fromScale(1, 1)
+	tabContent.BackgroundTransparency = 1
+	tabContent.ScrollBarThickness = 3
+	tabContent.ScrollBarImageColor3 = Color3.fromRGB(140, 82, 255)
+	tabContent.Visible = false
+
+	local list = Instance.new("UIListLayout", tabContent)
+	list.SortOrder = Enum.SortOrder.LayoutOrder
+	list.Padding = UDim.new(0, 6)
+
+	local pad = Instance.new("UIPadding", tabContent)
+	pad.PaddingTop = UDim.new(0, 10)
+	pad.PaddingLeft = UDim.new(0, 10)
+	pad.PaddingRight = UDim.new(0, 10)
+
+	tabBtn.MouseButton1Click:Connect(function()
+		for _, t in pairs(tabs) do
+			t.Btn.BackgroundColor3 = Color3.fromRGB(25, 25, 32)
+			t.Btn.TextColor3 = Color3.fromRGB(160, 160, 175)
+			t.Content.Visible = false
+		end
+		tabBtn.BackgroundColor3 = Color3.fromRGB(140, 82, 255)
+		tabBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+		tabContent.Visible = true
+	end)
+
+	local tabData = {Btn = tabBtn, Content = tabContent}
+	table.insert(tabs, tabData)
+
+	if #tabs == 1 then
+		tabBtn.BackgroundColor3 = Color3.fromRGB(140, 82, 255)
+		tabBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+		tabContent.Visible = true
+	end
+
+	return tabContent
+end
+
+-- Tạo các Tab giao diện Zzz Hub
+local mainTab = createTab("Trang Chủ")
+local playerTab = createTab("Người Chơi")
+local miscTab = createTab("Cấu Hình")
+
+-- Thêm các nút chức năng ví dụ
+local function addToggle(parent, text, callback)
+	local btn = Instance.new("TextButton", parent)
+	btn.Size = UDim2.new(1, 0, 0, 36)
+	btn.BackgroundColor3 = Color3.fromRGB(22, 22, 28)
+	btn.BorderSizePixel = 0
+	btn.Text = "  " .. text
+	btn.TextColor3 = Color3.fromRGB(220, 220, 230)
+	btn.Font = Enum.Font.GothamMedium
+	btn.TextSize = 13
+	btn.TextXAlignment = Enum.TextXAlignment.Left
+	Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 6)
+
+	local state = false
+	local indicator = Instance.new("Frame", btn)
+	indicator.AnchorPoint = Vector2.new(1, 0.5)
+	indicator.Position = UDim2.new(1, -8, 0.5, 0)
+	indicator.Size = UDim2.fromOffset(20, 20)
+	indicator.BackgroundColor3 = Color3.fromRGB(40, 40, 50)
+	Instance.new("UICorner", indicator).CornerRadius = UDim.new(0, 4)
+
+	btn.MouseButton1Click:Connect(function()
+		state = not state
+		indicator.BackgroundColor3 = state and Color3.fromRGB(140, 82, 255) or Color3.fromRGB(40, 40, 50)
+		if callback then callback(state) end
+	end)
+end
+
+addToggle(mainTab, "Bật Tự Động Farm (Auto Farm)", function(v) end)
+addToggle(mainTab, "Fast Attack (Đánh Nhanh)", function(v) end)
+addToggle(playerTab, "Tăng Tốc Độ Chạy (Speed)", function(v) end)
+addToggle(playerTab, "Nhảy Cao (Infinite Jump)", function(v) end)
+
+-- Nút Toggle nổi góc màn hình
+local OpenBtn = Instance.new("TextButton", GUI)
+OpenBtn.Name = "OpenToggle"
+OpenBtn.Position = UDim2.new(0, 15, 0.5, -20)
+OpenBtn.Size = UDim2.fromOffset(40, 40)
+OpenBtn.BackgroundColor3 = Color3.fromRGB(15, 15, 20)
+OpenBtn.Text = "Z"
+OpenBtn.TextColor3 = Color3.fromRGB(140, 82, 255)
+OpenBtn.Font = Enum.Font.GothamBlack
+OpenBtn.TextSize = 18
+OpenBtn.Active = true
+OpenBtn.Draggable = true
+Instance.new("UICorner", OpenBtn).CornerRadius = UDim.new(0, 10)
+
+local openStroke = Instance.new("UIStroke", OpenBtn)
+openStroke.Color = Color3.fromRGB(140, 82, 255)
+openStroke.Thickness = 1.5
+
+-- Logic Ẩn/Hiện Menu
+local isOpen = true
+
+local function toggleUI()
+	isOpen = not isOpen
+	if isOpen then
+		Main.Visible = true
+		TweenService:Create(Main, TweenInfo.new(0.25, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {GroupTransparency = 0}):Play()
+		TweenService:Create(scale, TweenInfo.new(0.25, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Scale = 1}):Play()
+	else
+		TweenService:Create(Main, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {GroupTransparency = 1}):Play()
+		TweenService:Create(scale, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {Scale = 0.9}):Play()
+		task.wait(0.2)
+		if not isOpen then Main.Visible = false end
+	end
+end
+
+Close.MouseButton1Click:Connect(toggleUI)
+OpenBtn.MouseButton1Click:Connect(toggleUI)
+
+-- Hiệu ứng xuất hiện
+TweenService:Create(Main, TweenInfo.new(0.3, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {GroupTransparency = 0}):Play()
+TweenService:Create(scale, TweenInfo.new(0.3, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Scale = 1}):Play()
